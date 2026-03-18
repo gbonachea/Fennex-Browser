@@ -629,70 +629,6 @@ class DownloadsWindow(QDialog):
         self.download_items[id(qdownload)] = (item, widget, progress, btn_pause, btn_resume, btn_cancel)
 
 class MainWindow(QMainWindow):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle('Descargas')
-        self.setWindowModality(Qt.NonModal)
-        self.setMinimumWidth(500)
-        self.layout = QVBoxLayout(self)
-        self.list_widget = QListWidget()
-        self.layout.addWidget(self.list_widget)
-        self.download_items = {}  # id: widgets
-
-    def add_download(self, qdownload):
-        # qdownload: QWebEngineDownloadItem
-        widget = QWidget()
-        hbox = QHBoxLayout(widget)
-        label = QLabel(qdownload.downloadFileName())
-        progress = QProgressBar()
-        progress.setValue(0)
-        hbox.addWidget(label)
-        hbox.addWidget(progress)
-        btn_pause = QPushButton('Pausar')
-        btn_resume = QPushButton('Continuar')
-        btn_cancel = QPushButton('Cancelar')
-        hbox.addWidget(btn_pause)
-        hbox.addWidget(btn_resume)
-        hbox.addWidget(btn_cancel)
-        item = QListWidgetItem()
-        self.list_widget.addItem(item)
-        self.list_widget.setItemWidget(item, widget)
-        item.setSizeHint(widget.sizeHint())
-        # Conectar señales reales
-        btn_pause.clicked.connect(qdownload.pause)
-        btn_resume.clicked.connect(qdownload.resume)
-        btn_cancel.clicked.connect(qdownload.cancel)
-        # Actualizar progreso
-        def on_progress(received, total):
-            if total > 0:
-                percent = int(received * 100 / total)
-                progress.setValue(percent)
-            else:
-                progress.setValue(0)
-        qdownload.downloadProgress.connect(on_progress)
-        # Estado final
-        def on_finished():
-            if qdownload.state() == qdownload.DownloadCompleted:
-                label.setText(f"{qdownload.downloadFileName()} (Completado)")
-            elif qdownload.state() == qdownload.DownloadCancelled:
-                label.setText(f"{qdownload.downloadFileName()} (Cancelado)")
-            elif qdownload.state() == qdownload.DownloadInterrupted:
-                label.setText(f"{qdownload.downloadFileName()} (Interrumpido)")
-            btn_pause.setEnabled(False)
-            btn_resume.setEnabled(False)
-            btn_cancel.setEnabled(False)
-        qdownload.finished.connect(on_finished)
-        # Guardar referencia
-        self.download_items[id(qdownload)] = (item, widget, progress, btn_pause, btn_resume, btn_cancel)
-
-    def update_progress(self, download_id, value):
-        if download_id in self.download_items:
-            _, _, progress, *_ = self.download_items[download_id]
-            progress.setValue(value)
-
-    def set_status(self, download_id, status):
-        # Aquí podrías actualizar el color o texto según estado
-        pass
     # Define signals with correct types
     suggestions_ready = pyqtSignal(list)
     suggestions_hide = pyqtSignal()
@@ -2347,7 +2283,7 @@ class MainWindow(QMainWindow):
             download.setPath(full_path)
             
             # Mostrar la ventana de descargas
-            if not hasattr(self, '_downloads_window'):
+            if self._downloads_window is None:
                 self._downloads_window = DownloadsWindow(self)
             
             self._downloads_window.show()
